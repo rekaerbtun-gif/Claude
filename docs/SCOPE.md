@@ -4,7 +4,8 @@
 > team: morning briefing → 1-3-5 plan → check-ins → end-of-day close-out, with
 > live alerts for critical tickets and a growing knowledge base.
 
-Status: **Draft for review.** The decisions in §10 are needed before building starts.
+Status: **Draft v0.2 for review.** The decisions in §10 are needed before building starts.
+The quality bar every feature must meet is in §12–§14.
 
 ---
 
@@ -310,3 +311,87 @@ Leave       id, user_id, date_from, date_to
 | Critical ticket acknowledged within 10 min | ≥ 95% |
 | Carryover items older than 3 days | Trending down |
 | Team says it saves them time (quick poll) | Yes from both |
+
+---
+
+## 12. Product principles — what makes this work
+
+These are the tests every feature has to pass. If a feature breaks one, we
+change or cut it.
+
+| # | Principle | What it means in practice | How we check it |
+|---|---|---|---|
+| 1 | **Faster than not using it** | Each prompt takes under 30 seconds. The whole day's overhead is under 10 minutes | Time the pilot: morning ≤ 3 min, each check-in ≤ 20 s, EOD ≤ 3 min |
+| 2 | **Confirm, don't type** | The bot already knows yesterday's items, tickets, and plans, so people tap to confirm and type only what's new | Fewer than 1 in 3 interactions need typed text |
+| 3 | **Reliable like a utility** | The 08:30 prompt arrives every working day, on time. Data is never lost. If something breaks, *we* know before the team does | 100% of scheduled prompts sent in the pilot. Daily backups. Health alerts |
+| 4 | **Calm by default** | Predictable times, batched messages. Only 🚨 critical tickets interrupt | ≤ 8 bot messages per person on a normal day |
+| 5 | **Gives back to the operator** | It remembers for them, shows what they got done, and protects them when fire-fighting derails the plan | Both operators say it helps *them* (pilot poll) |
+| 6 | **Fair** | Unplanned work counts. Late answers are accepted. Leave is respected | No one is flagged for a day spent on a logged critical ticket |
+| 7 | **Forgiving** | Anything can be edited or undone. Typos are understood. Nothing gets a person stuck | Every action has an Undo or Edit path |
+| 8 | **One owner, one time** | Every item and ticket has exactly one owner and a "by when" | No ownerless items in the database |
+| 9 | **One source of truth** | Tickets and tasks live in one place, and the bot never contradicts the real system | Sync checks once tickets are integrated |
+| 10 | **Visible, not policed** | The manager sees exceptions (blocked, late, missed), not a minute-by-minute feed | Manager receives ≤ 3 messages a day plus the digest |
+
+## 13. Experience design standards
+
+A professional feel comes from consistency more than features.
+
+**Identity**
+- A proper name, a bot avatar, and a short bio. The bot introduces itself on first use.
+- One consistent tone: brief, warm, and direct. It uses first names, and it doesn't
+  guilt-trip or overuse exclamation marks.
+
+**Message design system:** every bot message follows the same layout:
+
+```
+<icon> <Title> — <context: date / time / count>     ← what this is, at a glance
+<body: max ~7 lines, grouped, most urgent first>    ← only what's needed now
+<progress: "2 of 4 tickets updated">               ← where they are
+[Primary action] [Secondary] [Later]               ← one obvious next step
+```
+
+**Fixed visual vocabulary** (always the same meaning, nothing else):
+
+| Priority | Status | Message types |
+|---|---|---|
+| 🔴 Critical · 🟠 High · 🟢 Normal | ✅ Done · 🔄 On track · ⏰ Rescheduled · ⛔ Blocked · 🗑 Dropped | ☀️ Briefing · 🎯 Plan · 🕑 Check-in · 🌙 Close-out · 🚨 Alert · 📊 Digest |
+
+**Interaction rules**
+- Buttons first. Typing is only for genuinely new information.
+- A long flow is broken into steps with progress shown ("Step 2 of 3: missed calls").
+- Every completed flow ends with a short confirmation card. Nothing is left ambiguous.
+- Commands are listed in Telegram's menu, so nobody has to remember them.
+- If the bot doesn't understand something, it offers the likely options instead of "invalid input".
+- Escalation messages to the manager stay factual and neutral, e.g. "Priya's close-out is
+  pending (18:15)", never accusatory.
+
+**Copy examples**
+
+| Instead of | Write |
+|---|---|
+| "ERROR: Plan not submitted." | "No plan yet today. Want to start with your carryover items?" |
+| "You have failed to update ticket #212." | "#212 (Lot B barrier) still needs an update. 1 tap ➜" |
+| "Submit EOD now." | "🌙 Time to close out. About 2 minutes, then you're done for the day." |
+
+## 14. Running it like a real product
+
+**Reliability and trust**
+- A separate **test bot** and dry-run mode. Changes are tried there before reaching the team.
+- Monitoring: if the 08:30 briefing hasn't gone out by 08:35, the manager gets alerted.
+- Automatic daily database backups, with a restore that has been tested once.
+- An **audit trail**: every status change records who, when, and the old and new values.
+- Data retention policy, e.g. customer phone numbers deleted after 90 days.
+
+**Onboarding and adoption**
+- **Co-design:** walk the 2 operators through the flow *before* building, and adjust it with them. People
+  use what they helped shape.
+- A first-run tour in the bot (2 minutes), plus a one-page guide.
+- **Shadow week:** the bot runs fully but escalations to the manager are switched off. We tune timings and
+  wording. Then go live.
+- A `/feedback` command available any time. A 15-minute review at the end of each pilot week.
+
+**Evolving it**
+- Versioned releases with a short "What's new" message to the team.
+- A monthly look at the metrics in §11. Cut prompts nobody values, and add only what removes
+  real friction.
+- Configuration (times, tiers, critical rules) can be changed without code changes.
