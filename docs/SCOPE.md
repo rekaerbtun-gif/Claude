@@ -4,7 +4,7 @@
 > team: morning briefing → 1-3-5 plan → check-ins → end-of-day close-out, with
 > live alerts for critical tickets and a growing knowledge base.
 
-Status: **Draft v0.2 for review.** The decisions in §10 are needed before building starts.
+Status: **Draft v0.3 for review.** The decisions in §10 are needed before building starts.
 The quality bar every feature must meet is in §12–§14.
 
 ---
@@ -250,10 +250,11 @@ Leave       id, user_id, date_from, date_to
 
 ## 8. Phased delivery
 
-**Phase 1: MVP, the daily loop (≈1–2 weeks of build plus a 1-week pilot)**
+**Phase 1: MVP, the daily loop plus the tickets web app (≈2–3 weeks of build plus a 1-week pilot)**
 - Telegram bot with user allow-list and linking
 - 08:30 briefing with carryover and tickets
-- Tickets managed inside the bot (`/ticket`) as the first source of truth
+- Tickets web app (§15): list, filters, create/edit, history, login. The bot and the web app share one database
+- One-time Excel import, plus an "Export to Excel" button
 - Critical alerts with an acknowledge button and escalation ladder
 - 1-3-5 planning with suggestions and one-message entry
 - Check-ins (regular and deadline, merged)
@@ -263,7 +264,8 @@ Leave       id, user_id, date_from, date_to
 - KB as markdown plus `/kb` search
 
 **Phase 2: integrations and intelligence**
-- Sync tickets from your real helpdesk, Google Sheet, or email
+- QR-code ticket form at each site, so site staff and clients can raise tickets directly
+- Email-to-ticket (forward an email and it becomes a ticket)
 - AI assist: turn free-text updates into structured status, and draft the pending emails
 - Weekly report, reschedule analytics
 - KB capture from resolved tickets, and an onboarding path
@@ -276,7 +278,8 @@ Leave       id, user_id, date_from, date_to
 
 ## 9. Technical approach (proposed)
 
-- **Python** with `python-telegram-bot` (built-in job scheduler)
+- **Python / Django** for the web app (login, database, admin, migrations built in)
+- **`python-telegram-bot`** for the bot, in the same project, using the same database
 - **SQLite** to start (plenty for 2–10 users, easy to back up). Postgres later if needed
 - **Hosting:** a small VPS or Railway or Fly.io (≈ $5/month). Long polling means no domain
   or HTTPS setup is needed
@@ -287,9 +290,8 @@ Leave       id, user_id, date_from, date_to
 
 ## 10. Decisions needed from you
 
-1. **Where do support tickets live today?** (Helpdesk tool, Excel or Google Sheet,
-   WhatsApp, email?) Phase 1 can run tickets inside the bot. Phase 2 syncs
-   from your existing system.
+1. ~~Where do support tickets live today?~~ **Answered: Excel.** Proposal: replace it
+   with the tickets web app (§15). Still needed: the column headers or a sample file.
 2. **What makes a ticket critical?** And who raises tickets: operators, clients, or
    site staff?
 3. **Telegram okay?** Do both team members have it, ideally on work phones?
@@ -395,3 +397,44 @@ A professional feel comes from consistency more than features.
 - A monthly look at the metrics in §11. Cut prompts nobody values, and add only what removes
   real friction.
 - Configuration (times, tiers, critical rules) can be changed without code changes.
+
+## 15. Tickets web app (replaces the Excel tracker)
+
+**Why not keep Excel as the live system?**
+- No instant trigger when a critical ticket is added, so alerts would lag.
+- Two people editing the same file at once causes conflicts and lost rows.
+- Free-typed columns ("Critcal", "high ", blank) break the logic.
+- There's no history of who changed what.
+
+**Proposal:** a small web app that is the single source of truth for tickets. It shares
+one database with the bot, so a ticket created on the web triggers a 🚨 alert within
+seconds, and an update from Telegram shows on the web immediately.
+
+```
+   Web app (browser, laptop or phone)       Telegram bot
+              │                                   │
+              └────────── one database ───────────┘
+                             │
+                 Excel import (once) / Excel export (any time)
+```
+
+**Phase 1 screens**
+| Screen | What it does |
+|---|---|
+| Login | Email and password for the 3 users. Roles: operator, manager, admin |
+| Tickets | Table with filters (status, priority, site, assignee, age) and search. Overdue and critical tickets highlighted |
+| Ticket detail | Fields, a timeline of every update (web and Telegram), assign, change status |
+| New ticket | Short form with dropdowns for site, category, and priority. No free-typed priorities |
+| Today | Each operator's 1-3-5 plan and status (read-only for the manager) |
+| Export | One click downloads an Excel file, so existing reports keep working |
+
+**Excel migration**
+1. Map your current columns to ticket fields (needs the header row or a sample file).
+2. Run an import with a dry-run report: rows imported, rows with problems, duplicates.
+3. Run both side by side for 2–3 days, then the web app becomes the source of truth and the Excel file is archived.
+
+**Later**
+- A QR code at each parking site that opens a public "Report a problem" form. Tickets
+  then come straight from site staff and customers.
+- Knowledge base pages (§5) inside the same web app.
+- The manager dashboard (§4.6) as a web page.
